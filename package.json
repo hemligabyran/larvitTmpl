@@ -1,27 +1,28 @@
 {
-	'author': {
-		'name': 'Mikael "Lilleman" Göransson',
-		'email': 'lilleman@larvit.se',
-		'url': 'http://github.com/hemligabyran/larvitTmpl',
+	"author": {
+		"name": "Mikael 'Lilleman' Göransson",
+		"email": "lilleman@larvit.se",
+		"url": "http://github.com/hemligabyran/larvitTmpl"
 	},
-	'contributors': [],
-	'dependencies': {
-		'xpath': 'x',
-		'xmldom': 'x'
+	"private": true,
+	"contributors": [],
+	"dependencies": {
+		"xpath": "x",
+		"xmldom": "x"
 	},
-	'description': 'DOM Template engine for javascript',
-	'devDependencies': {},
-	'keywords': [
-		'dom',
-		'templating',
-		'template'
+	"description": "DOM Template engine for javascript",
+	"devDependencies": {},
+	"keywords": [
+		"dom",
+		"templating",
+		"template"
 	],
-	'main': 'larvitTmpl.js',
-	'name': 'larvitTmpl',
-	'repository': {
-		'url': 'https://github.com/hemligabyran/larvitTmpl',
-		'type': 'git'
+	"main": "larvitTmpl.js",
+	"name": "larvitTmpl",
+	"repository": {
+		"url": "https://github.com/hemligabyran/larvitTmpl",
+		"type": "git"
 	},
-	'version': '0.1',
-	'readmeFilename': 'README.md',
+	"version": "0.0.1beta",
+	"readmeFilename": "README.md"
 }

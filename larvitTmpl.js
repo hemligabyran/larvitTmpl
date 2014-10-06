@@ -37,6 +37,24 @@ exports.render = function(tmplStr, data, callback) {
 			}
 		}
 
+		// Walk through all the nodes with a data-attribute
+		var attribsToFill = xpath.select('//*[@data-attribute]', doc);
+		for (var i = 0; i < attribsToFill.length; i++) {
+			var dataKey      = attribsToFill[i].getAttribute('data-attribute'),
+			    resolvedData = getValByPath(data, dataKey);
+
+			if (typeof resolvedData === 'object' && resolvedData.name != undefined && resolvedData.value != undefined) {
+				var attribVal = attribsToFill[i].getAttribute(resolvedData.name);
+
+				if (attribVal)
+					attribVal += ' ' + resolvedData.value;
+				else
+					attribVal = resolvedData.value;
+
+				attribsToFill[i].setAttribute(resolvedData.name, attribVal);
+			}
+		}
+
 		callback(null, doc.toString());
 	});
 }
@@ -45,64 +63,103 @@ exports.renderArray = function(node, data) {
 	var dataKey      = node.getAttribute('data-value'),
 	    resolvedData = getValByPath(data, dataKey);
 
-	if (resolvedData instanceof Array) {
-		for (var i = 0; i < resolvedData.length; i++) {
-			var newNode          = node.cloneNode(true),
-			    localNodesToFill = xpath.select('./descendant::node()[@data-localvalue]', newNode);
-
-			// Loop through localvalue-attribute nodes
-			for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
-				var localNode         = localNodesToFill[i2],
-				    localDataKey      = localNode.getAttribute('data-localvalue'),
-				    localResolvedData = getValByPath(resolvedData[i], localDataKey);
-
-				if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
-					localNode.appendChild(node.ownerDocument.createTextNode(localResolvedData));
-				else if (localResolvedData instanceof Array)
-					exports.renderLocalArray(localNode, localResolvedData);
-			}
-
-			if (typeof resolvedData[i] == 'string' || typeof resolvedData[i] == 'number')
-				newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i]));
-
-			node.parentNode.insertBefore(newNode, node);
-		}
-	} else {
+	if ( ! (resolvedData instanceof Array)) {
 		console.error('larvitTmpl - exports.renderArray() called but data could not be resolved as array');
+		return;
+	}
+
+	for (var i = 0; i < resolvedData.length; i++) {
+		var newNode          = node.cloneNode(true),
+		    localNodesToFill = xpath.select('./descendant::node()[@data-localvalue]', newNode);
+
+		// Loop through data-localvalues
+		for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
+			var localNode         = localNodesToFill[i2],
+			    localDataKey      = localNode.getAttribute('data-localvalue'),
+			    localResolvedData = getValByPath(resolvedData[i], localDataKey);
+
+			if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
+				localNode.appendChild(node.ownerDocument.createTextNode(localResolvedData));
+			else if (localResolvedData instanceof Array)
+				exports.renderLocalArray(localNode, localResolvedData);
+		}
+
+		if (typeof resolvedData[i] == 'string' || typeof resolvedData[i] == 'number')
+			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i]));
+		else if (typeof resolvedData[i].value == 'string' || typeof resolvedData[i].value == 'number')
+			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i].value));
+
+		if (newNode.getAttribute('data-localattribute')) {
+			var localDataKey      = newNode.getAttribute('data-localattribute'),
+			    localResolvedData = getValByPath(resolvedData[i], localDataKey);
+
+			if (typeof localResolvedData === 'object' && localResolvedData.name != undefined && localResolvedData.value != undefined) {
+				var attribVal = newNode.getAttribute(localResolvedData.name);
+
+				if (attribVal)
+					attribVal += ' ' + localResolvedData.value;
+				else
+					attribVal = localResolvedData.value;
+
+				newNode.setAttribute(localResolvedData.name, attribVal);
+			}
+		}
+
+		node.parentNode.insertBefore(newNode, node);
 	}
 }
 
 exports.renderLocalArray = function(node, data) {
 	var dataKey = node.getAttribute('data-localvalue');
 
-	if (data instanceof Array) {
-		for (var i = 0; i < data.length; i++) {
-			var newNode          = node.cloneNode(true),
-			    localNodesToFill = xpath.select('./descendant::node()[@data-localvalue]', newNode);
+	if ( ! (data instanceof Array)) {
+		console.error('larvitTmpl - exports.renderLocalArray() called but data could not be resolved as array');
+		return;
+	}
 
-			// Loop through localvalue-attribute nodes
-			for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
-				var localNode         = localNodesToFill[i2],
-				    localDataKey      = localNode.getAttribute('data-localvalue'),
-				    localResolvedData = getValByPath(data[i], localDataKey);
+	for (var i = 0; i < data.length; i++) {
+		var newNode            = node.cloneNode(true),
+		    localNodesToFill   = xpath.select('./descendant::node()[@data-localvalue]', newNode),
+		    localAttribsToFill = xpath.select('./descendant::node()[@data-localattribute]', newNode);
 
-				if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
-					localNode.appendChild(node.ownerDocument.createTextNode(localResolvedData));
-				else if (localResolvedData instanceof Array)
-					exports.renderLocalArray(localNode, localResolvedData);
-			}
+		// Loop through localvalues
+		for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
+			var localNode         = localNodesToFill[i2],
+			    localDataKey      = localNode.getAttribute('data-localvalue'),
+			    localResolvedData = getValByPath(data[i], localDataKey);
 
-			if (typeof data[i] == 'string' || typeof data[i] == 'number')
-				newNode.appendChild(node.ownerDocument.createTextNode(data[i]));
-
-			node.parentNode.insertBefore(newNode, node);
+			if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
+				localNode.appendChild(node.ownerDocument.createTextNode(localResolvedData));
+			else if (localResolvedData instanceof Array)
+				exports.renderLocalArray(localNode, localResolvedData);
 		}
 
-		// Remove the original node
-		node.parentNode.removeChild(node);
-	} else {
-		console.error('larvitTmpl - exports.renderLocalArray() called but data could not be resoled as array');
+		// If this data entry is a string or anumber, add it as a text node directly
+		if (typeof data[i] == 'string' || typeof data[i] == 'number')
+			newNode.appendChild(node.ownerDocument.createTextNode(data[i]));
+
+		// Walk through all the nodes with a data-localattribute
+		for (var i2 = 0; i2 < localAttribsToFill.length; i2++) {
+			var dataKey      = localAttribsToFill[i2].getAttribute('data-localattribute'),
+			    resolvedData = getValByPath(data, dataKey);
+
+			if (typeof resolvedData === 'object' && resolvedData.name != undefined && resolvedData.value != undefined) {
+				var attribVal = localAttribsToFill[i2].getAttribute(resolvedData.name);
+
+				if (attribVal)
+					attribVal += ' ' + resolvedData.value;
+				else
+					attribVal = resolvedData.value;
+
+				localAttribsToFill[i2].setAttribute(resolvedData.name, attribVal);
+			}
+		}
+
+		node.parentNode.insertBefore(newNode, node);
 	}
+
+	// Remove the original node
+	node.parentNode.removeChild(node);
 }
 
 /**

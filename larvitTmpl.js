@@ -72,8 +72,9 @@ exports.renderArray = function(node, data) {
 	}
 
 	for (var i = 0; i < resolvedData.length; i++) {
-		var newNode          = node.cloneNode(true),
-		    localNodesToFill = xpath.select('./descendant::node()[@data-localvalue]', newNode);
+		var newNode            = node.cloneNode(true),
+		    localNodesToFill   = xpath.select('./descendant::node()[@data-localvalue]', newNode),
+		    localAttribsToFill = xpath.select('./descendant::node()[@data-localattribute]', newNode);
 
 		// Loop through data-localvalues
 		for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
@@ -91,6 +92,24 @@ exports.renderArray = function(node, data) {
 			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i]));
 		else if (typeof resolvedData[i].value == 'string' || typeof resolvedData[i].value == 'number')
 			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i].value));
+
+		// Loop through data-localattributes
+		for (var i2 = 0; i2 < localAttribsToFill.length; i2++) {
+			var localAttrib       = localAttribsToFill[i2],
+			    localDataKey      = localAttrib.getAttribute('data-localattribute'),
+			    localResolvedData = getValByPath(resolvedData[i], localDataKey);
+
+			if (typeof localResolvedData === 'object' && localResolvedData.name != undefined && localResolvedData.value != undefined) {
+				var attribVal = localAttrib.getAttribute(localResolvedData.name);
+
+				if (attribVal)
+					attribVal += ' ' + localResolvedData.value;
+				else
+					attribVal = localResolvedData.value;
+
+				localAttrib.setAttribute(localResolvedData.name, attribVal);
+			}
+		}
 
 		if (newNode.getAttribute('data-localattribute')) {
 			var localDataKey      = newNode.getAttribute('data-localattribute'),

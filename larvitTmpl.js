@@ -115,22 +115,25 @@ function setNodeVal(node, data) {
 }
 
 function setAttrVal(node, data) {
-	var dataKey      = node.getAttribute('data-attribute'),
-	    resolvedData = getValByPath(data, dataKey);
+	var dataKeys = node.getAttribute('data-attribute').split(' ');
 
-	if ( ! (resolvedData instanceof Array))
-		resolvedData = [resolvedData];
+	for (var i = 0; i < dataKeys.length; i++) {
+		var resolvedData = getValByPath(data, dataKeys[i]);
 
-	for (var i2 = 0; i2 < resolvedData.length; i2++) {
-		if (typeof resolvedData[i2] === 'object' && resolvedData[i2].name != undefined && resolvedData[i2].value != undefined) {
-			var attribVal = node.getAttribute(resolvedData[i2].name);
+		if ( ! (resolvedData instanceof Array))
+			resolvedData = [resolvedData];
 
-			if (attribVal)
-				attribVal += ' ' + resolvedData[i2].value;
-			else
-				attribVal = resolvedData[i2].value;
+		for (var i2 = 0; i2 < resolvedData.length; i2++) {
+			if (typeof resolvedData[i2] === 'object' && resolvedData[i2].name != undefined && resolvedData[i2].value != undefined) {
+				var attribVal = node.getAttribute(resolvedData[i2].name);
 
-			node.setAttribute(resolvedData[i2].name, attribVal);
+				if (attribVal)
+					attribVal += ' ' + resolvedData[i2].value;
+				else
+					attribVal = resolvedData[i2].value;
+
+				node.setAttribute(resolvedData[i2].name, attribVal);
+			}
 		}
 	}
 }
@@ -146,18 +149,21 @@ function setArrNodeVal(node, data) {
 }
 
 function setArrAttrVal(node, data) {
-	var localDataKey      = node.getAttribute('data-localattribute'),
-	    localResolvedData = getValByPath(data, localDataKey);
+	var localDataKeys = node.getAttribute('data-localattribute').split(' ');
 
-	if (typeof localResolvedData === 'object' && localResolvedData.name != undefined && localResolvedData.value != undefined) {
-		var attribVal = node.getAttribute(localResolvedData.name);
+	for (var i = 0; i < localDataKeys.length; i++) {
+		var localResolvedData = getValByPath(data, localDataKeys[i]);
 
-		if (attribVal)
-			attribVal += ' ' + localResolvedData.value;
-		else
-			attribVal = localResolvedData.value;
+		if (typeof localResolvedData === 'object' && localResolvedData.name != undefined && localResolvedData.value != undefined) {
+			var attribVal = node.getAttribute(localResolvedData.name);
 
-		node.setAttribute(localResolvedData.name, attribVal);
+			if (attribVal)
+				attribVal += ' ' + localResolvedData.value;
+			else
+				attribVal = localResolvedData.value;
+
+			node.setAttribute(localResolvedData.name, attribVal);
+		}
 	}
 }
 

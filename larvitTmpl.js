@@ -11,52 +11,52 @@ exports.root = './public/html';
  * @param func callback(err, HTML-string)
  */
 exports.render = function(tmplStr, data, callback) {
-	exports.resolvePartials(tmplStr, function(err, resolvedTmplStr){
-		var doc         = new dom().parseFromString(resolvedTmplStr),
-		    nodesToFill = xpath.select('//*[@data-value]', doc);
+	resolvedTmplStr = exports.resolvePartials(tmplStr);
 
-		// Walk through all nodes with a data-value
-		for (var i = 0; i < nodesToFill.length; i++) {
-			var dataKey      = nodesToFill[i].getAttribute('data-value'),
-			    resolvedData = getValByPath(data, dataKey);
+	var doc         = new dom().parseFromString(resolvedTmplStr),
+	    nodesToFill = xpath.select('//*[@data-value]', doc);
 
-			if (resolvedData === false) {
-				// Explicitly remove the node
+	// Walk through all nodes with a data-value
+	for (var i = 0; i < nodesToFill.length; i++) {
+		var dataKey      = nodesToFill[i].getAttribute('data-value'),
+		    resolvedData = getValByPath(data, dataKey);
 
-				nodesToFill[i].parentNode.removeChild(nodesToFill[i]);
-			} else if (resolvedData instanceof Array) {
-				// Create a new element for each existing part of this array
+		if (resolvedData === false) {
+			// Explicitly remove the node
 
-				exports.renderArray(nodesToFill[i], data);
+			nodesToFill[i].parentNode.removeChild(nodesToFill[i]);
+		} else if (resolvedData instanceof Array) {
+			// Create a new element for each existing part of this array
 
-				// Remove the original node
-				nodesToFill[i].parentNode.removeChild(nodesToFill[i]);
-			} else if (resolvedData != undefined) {
-				// Simply append the node with some text
-				nodesToFill[i].appendChild(doc.createTextNode(resolvedData.toString()));
-			}
+			exports.renderArray(nodesToFill[i], data);
+
+			// Remove the original node
+			nodesToFill[i].parentNode.removeChild(nodesToFill[i]);
+		} else if (resolvedData != undefined) {
+			// Simply append the node with some text
+			nodesToFill[i].appendChild(doc.createTextNode(resolvedData.toString()));
 		}
+	}
 
-		// Walk through all the nodes with a data-attribute
-		var attribsToFill = xpath.select('//*[@data-attribute]', doc);
-		for (var i = 0; i < attribsToFill.length; i++) {
-			var dataKey      = attribsToFill[i].getAttribute('data-attribute'),
-			    resolvedData = getValByPath(data, dataKey);
+	// Walk through all the nodes with a data-attribute
+	var attribsToFill = xpath.select('//*[@data-attribute]', doc);
+	for (var i = 0; i < attribsToFill.length; i++) {
+		var dataKey      = attribsToFill[i].getAttribute('data-attribute'),
+		    resolvedData = getValByPath(data, dataKey);
 
-			if (typeof resolvedData === 'object' && resolvedData.name != undefined && resolvedData.value != undefined) {
-				var attribVal = attribsToFill[i].getAttribute(resolvedData.name);
+		if (typeof resolvedData === 'object' && resolvedData.name != undefined && resolvedData.value != undefined) {
+			var attribVal = attribsToFill[i].getAttribute(resolvedData.name);
 
-				if (attribVal)
-					attribVal += ' ' + resolvedData.value;
-				else
-					attribVal = resolvedData.value;
+			if (attribVal)
+				attribVal += ' ' + resolvedData.value;
+			else
+				attribVal = resolvedData.value;
 
-				attribsToFill[i].setAttribute(resolvedData.name, attribVal);
-			}
+			attribsToFill[i].setAttribute(resolvedData.name, attribVal);
 		}
+	}
 
-		callback(null, doc.toString());
-	});
+	callback(null, doc.toString());
 }
 
 exports.renderArray = function(node, data) {
@@ -169,7 +169,7 @@ exports.renderLocalArray = function(node, data) {
  *                     If it is an object, it have to be an instance of an xml object
  * @param func callback(err, tmplStr)
  */
-exports.resolvePartials = function(doc, callback) {
+exports.resolvePartials = function(doc) {
 	// Todo: This should cache the results!
 
 	if (typeof doc === 'string') {
@@ -180,7 +180,7 @@ exports.resolvePartials = function(doc, callback) {
 	var tmplStr  = doc.toString();
 
 	if ( ! partials.length)
-		callback(null, tmplStr);
+		return tmplStr;
 
 	for (var i = 0; i < partials.length; i++) {
 		var partial     = partials[i],
@@ -189,36 +189,41 @@ exports.resolvePartials = function(doc, callback) {
 		if (exports.root.substring(1, 4) == 'http') {
 			// Todo: require from URL via interwebz
 			console.error('larvitTmpl.js - resolvePartials() - Support for client side partials not supported yet');
+			return new Error('larvitTmpl.js - resolvePartials() - Support for client side partials not supported yet');
 		} else {
 			// Not http-something, assume local file
 			var fs              = require('fs'),
 			    partialFilename = exports.root + '/' + partialName;
 
-			fs.readFile(partialFilename, function(err, fileData){
-				if (err) {
-					console.error('larvitTmpl.js - resolvePartials() - file not found: ' + partialFilename);
-					callback(new Error('Template partial not found: ' + partialFilename));
-				} else {
-					var partialStr = fileData.toString();
+			var fileData = fs.readFileSync(partialFilename);
+			if ( ! fileData) {
+				console.error('larvitTmpl.js - resolvePartials() - file not found: ' + partialFilename);
+				return new Error('Template partial not found: ' + partialFilename);
+			}
 
-					exports.resolvePartials(partialStr, function(err, subTmplStr){
-						if (err) {
-							console.error('larvitTmpl.js - resolvePartials() - subResolver returned error:');
-							console.error(err);
-							callback(new Error('Template subResolver returned error'));
-						} else {
-							tmplStr = tmplStr.replace(partial.toString(), subTmplStr);
+			var partialStr = fileData.toString();
+			partialStr = exports.resolvePartials(partialStr);
+			if ( ! partialStr) {
+				console.error('larvitTmpl.js - resolvePartials() - subResolver returned error:');
+				console.error(partialStr);
 
-							callback(null, tmplStr);
-						}
-					});
-				}
-			});
+				return new Error('Template subResolver returned error');
+			}
+
+			tmplStr = tmplStr.replace(partial.toString(), partialStr);
+			console.log('Replacing:');
+			console.log(partial.toString());
+			console.log('with:');
+			console.log(partialStr);
+			console.log('Result:');
+			console.log(tmplStr);
 		}
 
 		// Remove the partial-node as its no longer needed
 		partial.parentNode.removeChild(partial);
 	}
+
+	return tmplStr;
 }
 
 /**

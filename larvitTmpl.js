@@ -1,5 +1,6 @@
 var xpath = require('xpath'),
-    dom   = require('xmldom').DOMParser;
+    dom   = require('xmldom').DOMParser,
+    cache = {}; // Caches the resolves
 
 exports.root = './public/html';
 
@@ -11,6 +12,7 @@ exports.root = './public/html';
  * @param func callback(err, HTML-string)
  */
 exports.render = function(tmplStr, data, callback) {
+	console.time('Template render');
 	resolvedTmplStr = exports.resolvePartials(tmplStr);
 
 	var doc         = new dom().parseFromString(resolvedTmplStr),
@@ -56,6 +58,7 @@ exports.render = function(tmplStr, data, callback) {
 		}
 	}
 
+	console.timeEnd('Template render');
 	callback(null, doc.toString());
 }
 
@@ -170,9 +173,10 @@ exports.renderLocalArray = function(node, data) {
  * @param func callback(err, tmplStr)
  */
 exports.resolvePartials = function(doc) {
-	// Todo: This should cache the results!
-
 	if (typeof doc === 'string') {
+		if (cache[doc] !== undefined)
+			return cache[doc];
+
 		doc = new dom().parseFromString(doc);
 	}
 
@@ -211,18 +215,13 @@ exports.resolvePartials = function(doc) {
 			}
 
 			tmplStr = tmplStr.replace(partial.toString(), partialStr);
-			console.log('Replacing:');
-			console.log(partial.toString());
-			console.log('with:');
-			console.log(partialStr);
-			console.log('Result:');
-			console.log(tmplStr);
 		}
 
 		// Remove the partial-node as its no longer needed
 		partial.parentNode.removeChild(partial);
 	}
 
+	cache[doc] = tmplStr;
 	return tmplStr;
 }
 

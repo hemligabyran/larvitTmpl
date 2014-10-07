@@ -20,122 +20,17 @@ exports.render = function(tmplStr, data, callback) {
 
 	// Walk through all nodes with a data-value
 	for (var i = 0; i < nodesToFill.length; i++) {
-		var dataKey      = nodesToFill[i].getAttribute('data-value'),
-		    resolvedData = getValByPath(data, dataKey);
-
-		if (resolvedData === false) {
-			// Explicitly remove the node
-
-			nodesToFill[i].parentNode.removeChild(nodesToFill[i]);
-		} else if (resolvedData instanceof Array) {
-			// Create a new element for each existing part of this array
-
-			exports.renderArray(nodesToFill[i], data);
-
-			// Remove the original node
-			nodesToFill[i].parentNode.removeChild(nodesToFill[i]);
-		} else if (resolvedData != undefined) {
-			// Simply append the node with some text
-			nodesToFill[i].appendChild(doc.createTextNode(resolvedData.toString()));
-		}
+		setNodeVal(nodesToFill[i], data);
 	}
 
 	// Walk through all the nodes with a data-attribute
 	var attribsToFill = xpath.select('//*[@data-attribute]', doc);
 	for (var i = 0; i < attribsToFill.length; i++) {
-		var dataKey      = attribsToFill[i].getAttribute('data-attribute'),
-		    resolvedData = getValByPath(data, dataKey);
-
-		if (typeof resolvedData === 'object' && resolvedData.name != undefined && resolvedData.value != undefined) {
-			var attribVal = attribsToFill[i].getAttribute(resolvedData.name);
-
-			if (attribVal)
-				attribVal += ' ' + resolvedData.value;
-			else
-				attribVal = resolvedData.value;
-
-			attribsToFill[i].setAttribute(resolvedData.name, attribVal);
-		}
+		setAttrVal(attribsToFill[i], data);
 	}
 
 	console.timeEnd('Template render');
 	callback(null, doc.toString());
-}
-
-exports.renderArray = function(node, data) {
-	var dataKey;
-
-	if (node.getAttribute('data-localvalue'))
-		dataKey = node.getAttribute('data-localValue');
-	else if (node.getAttribute('data-value'))
-		dataKey = node.getAttribute('data-value');
-
-	var resolvedData = getValByPath(data, dataKey);
-
-	if ( ! (resolvedData instanceof Array)) {
-		console.error('larvitTmpl - exports.renderArray() called but data could not be resolved as array');
-		return;
-	}
-
-	for (var i = 0; i < resolvedData.length; i++) {
-		var newNode            = node.cloneNode(true),
-		    localNodesToFill   = xpath.select('./descendant::node()[@data-localvalue]', newNode),
-		    localAttribsToFill = xpath.select('./descendant::node()[@data-localattribute]', newNode);
-
-		// Loop through data-localvalues
-		for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
-			var localNode         = localNodesToFill[i2],
-			    localDataKey      = localNode.getAttribute('data-localvalue'),
-			    localResolvedData = getValByPath(resolvedData[i], localDataKey);
-
-			if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
-				localNode.appendChild(node.ownerDocument.createTextNode(localResolvedData));
-			else if (localResolvedData instanceof Array)
-				exports.renderArray(localNode, localResolvedData);
-		}
-
-		if (typeof resolvedData[i] == 'string' || typeof resolvedData[i] == 'number')
-			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i]));
-		else if (typeof resolvedData[i].value == 'string' || typeof resolvedData[i].value == 'number')
-			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i].value));
-
-		// Loop through data-localattributes
-		for (var i2 = 0; i2 < localAttribsToFill.length; i2++) {
-			var localAttrib       = localAttribsToFill[i2],
-			    localDataKey      = localAttrib.getAttribute('data-localattribute'),
-			    localResolvedData = getValByPath(resolvedData[i], localDataKey);
-
-			if (typeof localResolvedData === 'object' && localResolvedData.name != undefined && localResolvedData.value != undefined) {
-				var attribVal = localAttrib.getAttribute(localResolvedData.name);
-
-				if (attribVal)
-					attribVal += ' ' + localResolvedData.value;
-				else
-					attribVal = localResolvedData.value;
-
-				localAttrib.setAttribute(localResolvedData.name, attribVal);
-			}
-		}
-
-		// There might also be a localattribute on the node iteslf
-		if (newNode.getAttribute('data-localattribute')) {
-			var localDataKey      = newNode.getAttribute('data-localattribute'),
-			    localResolvedData = getValByPath(resolvedData[i], localDataKey);
-
-			if (typeof localResolvedData === 'object' && localResolvedData.name != undefined && localResolvedData.value != undefined) {
-				var attribVal = newNode.getAttribute(localResolvedData.name);
-
-				if (attribVal)
-					attribVal += ' ' + localResolvedData.value;
-				else
-					attribVal = localResolvedData.value;
-
-				newNode.setAttribute(localResolvedData.name, attribVal);
-			}
-		}
-
-		node.parentNode.insertBefore(newNode, node);
-	}
 }
 
 /**
@@ -196,6 +91,119 @@ exports.resolvePartials = function(doc) {
 
 	cache[doc] = tmplStr;
 	return tmplStr;
+}
+
+function setNodeVal(node, data) {
+	var dataKey      = node.getAttribute('data-value'),
+	    resolvedData = getValByPath(data, dataKey);
+
+	if (resolvedData === false) {
+		// Explicitly remove the node
+
+		node.parentNode.removeChild(node);
+	} else if (resolvedData instanceof Array) {
+		// Create a new element for each existing part of this array
+
+		renderArray(node, data);
+
+		// Remove the original node
+		node.parentNode.removeChild(node);
+	} else if (resolvedData != undefined) {
+		// Simply append the node with some text
+		node.appendChild(node.ownerDocument.createTextNode(resolvedData.toString()));
+	}
+}
+
+function setAttrVal(node, data) {
+	var dataKey      = node.getAttribute('data-attribute'),
+	    resolvedData = getValByPath(data, dataKey);
+
+	if ( ! (resolvedData instanceof Array))
+		resolvedData = [resolvedData];
+
+	for (var i2 = 0; i2 < resolvedData.length; i2++) {
+		if (typeof resolvedData[i2] === 'object' && resolvedData[i2].name != undefined && resolvedData[i2].value != undefined) {
+			var attribVal = node.getAttribute(resolvedData[i2].name);
+
+			if (attribVal)
+				attribVal += ' ' + resolvedData[i2].value;
+			else
+				attribVal = resolvedData[i2].value;
+
+			node.setAttribute(resolvedData[i2].name, attribVal);
+		}
+	}
+}
+
+function setArrNodeVal(node, data) {
+	var localDataKey      = node.getAttribute('data-localvalue'),
+	    localResolvedData = getValByPath(data, localDataKey);
+
+	if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
+		node.appendChild(node.ownerDocument.createTextNode(localResolvedData));
+	else if (localResolvedData instanceof Array)
+		renderArray(node, localResolvedData);
+}
+
+function setArrAttrVal(node, data) {
+	var localDataKey      = node.getAttribute('data-localattribute'),
+	    localResolvedData = getValByPath(data, localDataKey);
+
+	if (typeof localResolvedData === 'object' && localResolvedData.name != undefined && localResolvedData.value != undefined) {
+		var attribVal = node.getAttribute(localResolvedData.name);
+
+		if (attribVal)
+			attribVal += ' ' + localResolvedData.value;
+		else
+			attribVal = localResolvedData.value;
+
+		node.setAttribute(localResolvedData.name, attribVal);
+	}
+}
+
+function renderArray(node, data) {
+	var dataKey;
+
+	if (node.getAttribute('data-localvalue'))
+		dataKey = node.getAttribute('data-localValue');
+	else if (node.getAttribute('data-value'))
+		dataKey = node.getAttribute('data-value');
+
+	var resolvedData = getValByPath(data, dataKey);
+
+	if ( ! (resolvedData instanceof Array)) {
+		var errorMsg = 'larvitTmpl - renderArray() called but data could not be resolved as array';
+		console.error(errorMsg);
+		return new Error(errorMsg);
+	}
+
+	for (var i = 0; i < resolvedData.length; i++) {
+		var newNode            = node.cloneNode(true),
+		    localNodesToFill   = xpath.select('./descendant::node()[@data-localvalue]', newNode),
+		    localAttribsToFill = xpath.select('./descendant::node()[@data-localattribute]', newNode);
+
+		// Loop through data-localvalues
+		for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
+			setArrNodeVal(localNodesToFill[i2], resolvedData[i]);
+		}
+
+		if (typeof resolvedData[i] == 'string' || typeof resolvedData[i] == 'number')
+			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i]));
+		else if (typeof resolvedData[i].value == 'string' || typeof resolvedData[i].value == 'number')
+			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i].value));
+
+		// Loop through data-localattributes
+		for (var i2 = 0; i2 < localAttribsToFill.length; i2++) {
+			setArrAttrVal(localAttribsToFill[i2], resolvedData[i]);
+		}
+
+		// There might also be a localattribute on the node iteslf
+		if (newNode.getAttribute('data-localattribute')) {
+			setArrAttrVal(newNode, resolvedData[i]);
+		}
+
+		node.parentNode.insertBefore(newNode, node);
+	}
 }
 
 /**

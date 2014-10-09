@@ -30,7 +30,10 @@ exports.render = function(tmplStr, data, callback) {
 	}
 
 	console.timeEnd('Template render');
-	callback(null, doc.toString());
+	if (typeof callback === 'function')
+		callback(null, doc.toString());
+	else
+		console.error('larvitTmpl.js - exports.render() - callback is not passed as a function');
 }
 
 /**
@@ -105,9 +108,6 @@ function setNodeVal(node, data) {
 		// Create a new element for each existing part of this array
 
 		renderArray(node, data);
-
-		// Remove the original node
-		node.parentNode.removeChild(node);
 	} else if (resolvedData != undefined) {
 		// Simply append the node with some text
 		node.appendChild(node.ownerDocument.createTextNode(resolvedData.toString()));
@@ -168,14 +168,19 @@ function setArrAttrVal(node, data) {
 }
 
 function renderArray(node, data) {
-	var dataKey;
+	var dataKey,
+	    resolvedData;
 
-	if (node.getAttribute('data-localvalue'))
-		dataKey = node.getAttribute('data-localValue');
-	else if (node.getAttribute('data-value'))
-		dataKey = node.getAttribute('data-value');
+	if (data instanceof Array) {
+		resolvedData = data;
+	} else {
+		if (node.getAttribute('data-localvalue'))
+			dataKey = node.getAttribute('data-localValue');
+		else if (node.getAttribute('data-value'))
+			dataKey = node.getAttribute('data-value');
 
-	var resolvedData = getValByPath(data, dataKey);
+		resolvedData = getValByPath(data, dataKey);
+	}
 
 	if ( ! (resolvedData instanceof Array)) {
 		var errorMsg = 'larvitTmpl - renderArray() called but data could not be resolved as array';
@@ -190,7 +195,18 @@ function renderArray(node, data) {
 
 		// Loop through data-localvalues
 		for (var i2 = 0; i2 < localNodesToFill.length; i2++) {
-			setArrNodeVal(localNodesToFill[i2], resolvedData[i]);
+
+			// If this is an array, we should produce new nodes first and then populate them
+			if (resolvedData[i] instanceof Array) {
+				for (var i3 = 0; i3 < resolvedData[i].length; i3++) {
+					var localNewNode = localNodesToFill[i2].cloneNode(true);
+					newNode.insertBefore(localNewNode, localNodesToFill[i2]);
+					setArrNodeVal(localNewNode, resolvedData[i][i3]);
+				}
+				localNodesToFill[i2].parentNode.removeChild(localNodesToFill[i2]);
+			} else {
+				setArrNodeVal(localNodesToFill[i2], resolvedData[i]);
+			}
 		}
 
 		if (typeof resolvedData[i] == 'string' || typeof resolvedData[i] == 'number')
@@ -210,6 +226,10 @@ function renderArray(node, data) {
 
 		node.parentNode.insertBefore(newNode, node);
 	}
+
+
+	// Remove the original node
+	node.parentNode.removeChild(node);
 }
 
 /**

@@ -221,3 +221,38 @@ exports.disableInArray = function(test) {
 
 	test.done();
 };
+
+// Simple plain text node
+exports.simpleTextNode = function(test) {
+	var tmplStr = '<!DOCTYPE html><html><head><title>test</title></head><body><p><text data-value="foo" /></p></body></html>';
+
+	var tmplData = {'foo': 'bar'};
+
+	var expectedStr = '<!DOCTYPE html><html><head><title>test</title></head><body><p>bar</p></body></html>';
+
+	larvitTmpl.render(tmplStr, tmplData, function(err, resultStr){
+		test.equal(resultStr, expectedStr);
+	});
+
+	test.done();
+};
+
+// Nested plain text node
+exports.nestedTextNode = function(test) {
+	var tmplStr = '<!DOCTYPE html><html><head><title>test</title></head><body><p data-value="parags"><text data-localvalue="foo" /></p></body></html>';
+
+	var tmplData = {
+		'parags': [
+			{'foo':'bar'},
+			{'foo':'blupp'}
+		]
+	};
+
+	var expectedStr = '<!DOCTYPE html><html><head><title>test</title></head><body><p data-value="parags">bar</p><p data-value="parags">blupp</p></body></html>';
+
+	larvitTmpl.render(tmplStr, tmplData, function(err, resultStr){
+		test.equal(resultStr, expectedStr);
+	});
+
+	test.done();
+};

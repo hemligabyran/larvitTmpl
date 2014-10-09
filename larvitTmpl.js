@@ -15,19 +15,22 @@ exports.render = function(tmplStr, data, callback) {
 	console.time('Template render');
 	resolvedTmplStr = exports.resolvePartials(tmplStr);
 
-	var doc         = new dom().parseFromString(resolvedTmplStr),
-	    nodesToFill = xpath.select('//*[@data-value]', doc);
+	var doc = new dom().parseFromString(resolvedTmplStr);
+
+	// First replace all text nodes that are not local
+	var textNodes = xpath.select('//text[not(@data-localvalue)]', doc);
+	for (var i = 0; i < textNodes.length; i++)
+		setTextNode(textNodes[i], data);
 
 	// Walk through all nodes with a data-value
-	for (var i = 0; i < nodesToFill.length; i++) {
+	var nodesToFill = xpath.select('//*[@data-value]', doc);
+	for (var i = 0; i < nodesToFill.length; i++)
 		setNodeVal(nodesToFill[i], data);
-	}
 
 	// Walk through all the nodes with a data-attribute
 	var attribsToFill = xpath.select('//*[@data-attribute]', doc);
-	for (var i = 0; i < attribsToFill.length; i++) {
+	for (var i = 0; i < attribsToFill.length; i++)
 		setAttrVal(attribsToFill[i], data);
-	}
 
 	console.timeEnd('Template render');
 	if (typeof callback === 'function')
@@ -94,6 +97,24 @@ exports.resolvePartials = function(doc) {
 
 	cache[doc] = tmplStr;
 	return tmplStr;
+}
+
+function setTextNode(node, data) {
+	var dataKey;
+
+	if (node.getAttribute('data-value'))
+		dataKey = node.getAttribute('data-value');
+	else if (node.getAttribute('data-localvalue'))
+		dataKey = node.getAttribute('data-localvalue');
+
+	resolvedData = getValByPath(data, dataKey);
+
+	if (typeof resolvedData == 'string' || typeof resolvedData == 'number') {
+		var newTextNode = node.ownerDocument.createTextNode(resolvedData.toString());
+		node.parentNode.replaceChild(newTextNode, node);
+	} else {
+		node.parentNode.removeChild(node);
+	}
 }
 
 function setNodeVal(node, data) {
@@ -217,14 +238,17 @@ function renderArray(node, data) {
 			newNode.appendChild(node.ownerDocument.createTextNode(resolvedData[i].value));
 
 		// Loop through data-localattributes
-		for (var i2 = 0; i2 < localAttribsToFill.length; i2++) {
+		for (var i2 = 0; i2 < localAttribsToFill.length; i2++)
 			setArrAttrVal(localAttribsToFill[i2], resolvedData[i]);
-		}
 
 		// There might also be a localattribute on the node iteslf
-		if (newNode.getAttribute('data-localattribute')) {
+		if (newNode.getAttribute('data-localattribute'))
 			setArrAttrVal(newNode, resolvedData[i]);
-		}
+
+		// Lastly, replace text nodes. This must be done lastly, becase otherwise we might override stuff thats been done above
+		var textNodes = xpath.select('./descendant-or-self::node()/text', newNode);
+		for (var i2 = 0; i2 < textNodes.length; i2++)
+			setTextNode(textNodes[i2], resolvedData[i]);
 
 		node.parentNode.insertBefore(newNode, node);
 	}

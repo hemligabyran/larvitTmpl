@@ -256,3 +256,46 @@ exports.nestedTextNode = function(test) {
 
 	test.done();
 };
+
+// Array of selectboxes with array of options
+exports.selectBoxes = function(test) {
+	var tmplStr = '<select data-value="type_select"><option data-localvalue="options" data-localattribute="optionval selected" /></select>';
+
+	var tmplData = {
+		'type_select': [
+			{
+				'options': [
+					{
+						'value': '--Choose--'
+					},
+					{
+						'value': 'a',
+						'optionval': {
+							'name': 'value',
+							'value': 'a'
+						}
+					},
+					{
+						'value': 'b',
+						'optionval': {
+							'name': 'value',
+							'value': 'b'
+						},
+						'selected': {
+							'name': 'selected',
+							'value': 'selected'
+						}
+					}
+				],
+			}
+		]
+	};
+
+	var expectedStr = '<select data-value="type_select"><option data-localvalue="options" data-localattribute="optionval selected">--Choose--</option><option data-localvalue="options" data-localattribute="optionval selected" value="a">a</option><option data-localvalue="options" data-localattribute="optionval selected" value="b" selected="selected">b</option></select>';
+
+	larvitTmpl.render(tmplStr, tmplData, function(err, resultStr){
+		test.equal(resultStr, expectedStr);
+	});
+
+	test.done();
+}

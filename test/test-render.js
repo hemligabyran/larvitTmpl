@@ -187,3 +187,37 @@ exports.veryDeepArray = function(test) {
 
 	test.done();
 };
+
+// Simple disable node
+exports.simpleDisable = function(test) {
+	var tmplStr = '<!DOCTYPE html><html><head><title>test</title></head><body><div data-value="foo" />dummy</body></html>';
+
+	var tmplData = {'foo': false};
+
+	var expectedStr = '<!DOCTYPE html><html><head><title>test</title></head><body>dummy</body></html>';
+
+	larvitTmpl.render(tmplStr, tmplData, function(err, resultStr){
+		test.equal(resultStr, expectedStr);
+	});
+
+	test.done();
+};
+
+// Disable node in array
+exports.disableInArray = function(test) {
+	var tmplStr = '<!DOCTYPE html><html><head><title>test</title></head><body><div data-value="foo"><p>bar</p><p data-localvalue="blubb">hidden</p></div>dummy</body></html>';
+
+	var tmplData = {
+		'foo': [
+			{'blubb': false}
+		]
+	};
+
+	var expectedStr = '<!DOCTYPE html><html><head><title>test</title></head><body><div data-value="foo"><p>bar</p></div>dummy</body></html>';
+
+	larvitTmpl.render(tmplStr, tmplData, function(err, resultStr){
+		test.equal(resultStr, expectedStr);
+	});
+
+	test.done();
+};

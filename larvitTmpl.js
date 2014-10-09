@@ -142,6 +142,8 @@ function setArrNodeVal(node, data) {
 	var localDataKey      = node.getAttribute('data-localvalue'),
 	    localResolvedData = getValByPath(data, localDataKey);
 
+	if (localResolvedData === false)
+		node.parentNode.removeChild(node);
 	if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
 		node.appendChild(node.ownerDocument.createTextNode(localResolvedData));
 	else if (localResolvedData instanceof Array)

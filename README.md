@@ -7,7 +7,7 @@ Tests are written for the module "nodeunit"
 
 Example of usage:
 
-    var larvitTmpl = require('larvitTmpl');
+    var larvitTmpl = require('larvittmpl');
 
     var tmplStr  = '<p data-value="text" />';
     var tmplData = {'text': 'foobar'};

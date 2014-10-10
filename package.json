@@ -8,7 +8,8 @@
 	"contributors": [],
 	"dependencies": {
 		"xpath": "x",
-		"xmldom": "x"
+		"xmldom": "x",
+		"libxmljs": "x"
 	},
 	"description": "DOM Template engine for javascript",
 	"devDependencies": {},

@@ -1,29 +1,34 @@
 {
-	"author": {
-		"name": "Mikael 'Lilleman' Göransson",
-		"email": "lilleman@larvit.se",
-		"url": "http://github.com/hemligabyran/larvitTmpl"
-	},
-	"private": false,
-	"contributors": [],
-	"dependencies": {
-		"xpath": "x",
-		"xmldom": "x",
-		"libxmljs": "x"
-	},
-	"description": "DOM Template engine for javascript",
-	"devDependencies": {},
-	"keywords": [
-		"dom",
-		"templating",
-		"template"
-	],
-	"main": "larvitTmpl.js",
-	"name": "larvitTmpl",
-	"repository": {
-		"url": "https://github.com/hemligabyran/larvitTmpl",
-		"type": "git"
-	},
-	"version": "0.0.3-beta",
-	"readmeFilename": "README.md"
+  "author": "Mikael 'Lilleman' Göransson <lilleman@larvit.se> (http://github.com/hemligabyran/larvitTmpl)",
+  "private": false,
+  "contributors": [],
+  "dependencies": {
+    "xpath": "x",
+    "xmldom": "x",
+    "libxmljs": "x"
+  },
+  "description": "DOM Template engine for javascript",
+  "devDependencies": {},
+  "keywords": [
+    "dom",
+    "templating",
+    "template"
+  ],
+  "main": "larvitTmpl.js",
+  "name": "larvittmpl",
+  "repository": {
+    "url": "https://github.com/hemligabyran/larvitTmpl",
+    "type": "git"
+  },
+  "version": "0.0.3-beta",
+  "bugs": {
+    "url": "https://github.com/hemligabyran/larvitTmpl/issues"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "nodeunit test/test-render.js"
+  },
+  "license": "BSD-2-Clause"
 }

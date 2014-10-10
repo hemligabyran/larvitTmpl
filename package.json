@@ -4,7 +4,7 @@
 		"email": "lilleman@larvit.se",
 		"url": "http://github.com/hemligabyran/larvitTmpl"
 	},
-	"private": true,
+	"private": false,
 	"contributors": [],
 	"dependencies": {
 		"xpath": "x",

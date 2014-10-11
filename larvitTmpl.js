@@ -4,6 +4,9 @@ exports.root = './public/html';
 // Will be printed before the xml/html-string
 exports.doctype = '<!DOCTYPE html>';
 
+// Used to log render time to console
+exports.logTime = false;
+
 /**
  * Render HTML template + data = HTML
  *
@@ -12,7 +15,8 @@ exports.doctype = '<!DOCTYPE html>';
  * @param func callback(err, HTML-string)
  */
 exports.render = function(tmplStr, data, callback) {
-	console.time('Template render');
+	if (exports.logTime)
+		console.time('Template render');
 
 	var libxmljs        = require('libxmljs'),
 	    resolvedTmplStr = exports.resolvePartials(tmplStr),
@@ -44,7 +48,9 @@ exports.render = function(tmplStr, data, callback) {
 	for (var i = 0; i < nodesToRemove.length; i++)
 		nodesToRemove[i].remove();
 
-	console.timeEnd('Template render');
+	if (exports.logTime)
+		console.timeEnd('Template render');
+
 	if (typeof callback === 'function')
 		callback(null, exports.doctype + doc2.root().toString());
 	else
@@ -137,7 +143,6 @@ function setNodeVal(node, data) {
 	if (resolvedData === false) {
 		// Explicitly remove the node
 
-		console.log('Path of node to remove: ' + node.path());
 		node.attr({'removethis':'ohyes'});
 	} else if (resolvedData instanceof Array) {
 		// Create a new element for each existing part of this array
@@ -191,7 +196,6 @@ function setArrNodeVal(node, data) {
 
 	if (localResolvedData === false)
 	{
-		console.log('Path of node to remove: ' + node.path());
 		node.attr({'removethis':'ohyes'});
 	}
 	if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
@@ -238,7 +242,6 @@ function renderArray(node, data) {
 
 					setArrNodeVal(addedLocalNewNode, resolvedData[i][i3]);
 				}
-				console.log('Path of node to remove: ' + localNodesToFill[i2].path());
 				localNodesToFill[i2].attr({'removethis':'ohyes'});
 			} else {
 				setArrNodeVal(localNodesToFill[i2], resolvedData[i]);
@@ -267,7 +270,6 @@ function renderArray(node, data) {
 	}
 
 	// Remove the original node
-	console.log('Path of node to remove: ' + node.path());
 	node.attr({'removethis':'ohyes'});
 }
 

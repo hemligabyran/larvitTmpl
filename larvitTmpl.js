@@ -16,7 +16,7 @@ exports.render = function(tmplStr, data, callback) {
 
 	var libxmljs        = require('libxmljs'),
 	    resolvedTmplStr = exports.resolvePartials(tmplStr),
-	    doc             = libxmljs.parseXmlString(resolvedTmplStr, { noblanks: true });
+	    doc             = libxmljs.parseXmlString(resolvedTmplStr, {'noblanks': true });
 
 	// First replace all text nodes that are not local
 	var textNodes = doc.find('//text[not(@data-localvalue)]');
@@ -33,9 +33,20 @@ exports.render = function(tmplStr, data, callback) {
 	for (var i = 0; i < attribsToFill.length; i++)
 		setAttrVal(attribsToFill[i], data);
 
+	// Lastly remove all nodes that are marked with removal attribute
+	// After we've re-parsed the string
+	// The reason we do this is removing nodes triggers a segmentation fault in libxmljs
+	// if we do it while working the document. No idea why. / Lilleman 2014-10-11
+	// It seems this is the reason: https://github.com/polotek/libxmljs/pull/163 / Lilleman a few minutes later
+	// If we did not need to do this double parsing, performance should increase
+	var doc2 = libxmljs.parseXmlString(doc.root().toString());
+	var nodesToRemove = doc2.find('//*[@removethis = "ohyes"]');
+	for (var i = 0; i < nodesToRemove.length; i++)
+		nodesToRemove[i].remove();
+
 	console.timeEnd('Template render');
 	if (typeof callback === 'function')
-		callback(null, exports.doctype + doc.root().toString());
+		callback(null, exports.doctype + doc2.root().toString());
 	else
 		console.error('larvitTmpl.js - exports.render() - callback is not passed as a function');
 }
@@ -126,7 +137,8 @@ function setNodeVal(node, data) {
 	if (resolvedData === false) {
 		// Explicitly remove the node
 
-		node.remove();
+		console.log('Path of node to remove: ' + node.path());
+		node.attr({'removethis':'ohyes'});
 	} else if (resolvedData instanceof Array) {
 		// Create a new element for each existing part of this array
 
@@ -153,7 +165,9 @@ function setAttrVal(node, data) {
 			resolvedData = [resolvedData];
 
 		for (var i2 = 0; i2 < resolvedData.length; i2++) {
-			if (typeof resolvedData[i2] === 'object' && resolvedData[i2].name != undefined && resolvedData[i2].value != undefined) {
+
+			// Make sure the attribute data is valid with a name (thats longer than '') and a value
+			if (typeof resolvedData[i2] === 'object' && resolvedData[i2].name != undefined && resolvedData[i2].value != undefined && resolvedData[i2].name.length > 0) {
 
 				if (node.attr(resolvedData[i2].name)) {
 					// Attribute exists, append it
@@ -176,7 +190,10 @@ function setArrNodeVal(node, data) {
 	    localResolvedData = getValByPath(data, localDataKey);
 
 	if (localResolvedData === false)
-		node.remove();
+	{
+		console.log('Path of node to remove: ' + node.path());
+		node.attr({'removethis':'ohyes'});
+	}
 	if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
 		node.text(node.text() + localResolvedData.toString());
 	else if (localResolvedData instanceof Array)
@@ -221,7 +238,8 @@ function renderArray(node, data) {
 
 					setArrNodeVal(addedLocalNewNode, resolvedData[i][i3]);
 				}
-				localNodesToFill[i2].remove();
+				console.log('Path of node to remove: ' + localNodesToFill[i2].path());
+				localNodesToFill[i2].attr({'removethis':'ohyes'});
 			} else {
 				setArrNodeVal(localNodesToFill[i2], resolvedData[i]);
 			}
@@ -249,7 +267,8 @@ function renderArray(node, data) {
 	}
 
 	// Remove the original node
-	node.remove();
+	console.log('Path of node to remove: ' + node.path());
+	node.attr({'removethis':'ohyes'});
 }
 
 /**

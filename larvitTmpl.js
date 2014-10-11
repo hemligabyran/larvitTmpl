@@ -20,6 +20,7 @@ exports.render = function(tmplStr, data, callback) {
 
 	var libxmljs        = require('libxmljs'),
 	    resolvedTmplStr = exports.resolvePartials(tmplStr),
+	    resolvedTmplStr = resolvedTmplStr.replace(/^\s+|\s+$/g, ''), // trim string
 	    doc             = libxmljs.parseXmlString(resolvedTmplStr, {'noblanks': true });
 
 	// First replace all text nodes that are not local
@@ -195,9 +196,7 @@ function setArrNodeVal(node, data) {
 	    localResolvedData = getValByPath(data, localDataKey);
 
 	if (localResolvedData === false)
-	{
 		node.attr({'removethis':'ohyes'});
-	}
 	if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
 		node.text(node.text() + localResolvedData.toString());
 	else if (localResolvedData instanceof Array)

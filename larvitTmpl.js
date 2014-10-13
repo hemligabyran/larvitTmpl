@@ -1,3 +1,5 @@
+'use strict';
+
 // Set search path root for resolving partials
 exports.root = './public/html';
 
@@ -130,7 +132,7 @@ function setTextNode(node, data) {
 	else if (node.attr('data-localvalue'))
 		dataKey = node.attr('data-localvalue').value();
 
-	resolvedData = getValByPath(data, dataKey);
+	var resolvedData = getValByPath(data, dataKey);
 	if (typeof resolvedData == 'string' || typeof resolvedData == 'number') {
 		node.name('span');
 		node.text(resolvedData.toString());

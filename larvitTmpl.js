@@ -140,31 +140,40 @@ function setTextNode(node, data) {
 }
 
 function setNodeVal(node, data) {
-	var dataKey      = node.attr('data-value').value(),
-	    resolvedData = getValByPath(data, dataKey);
+	if (node.attr('data-value')) {
+		var dataKey      = node.attr('data-value').value(),
+		    resolvedData = getValByPath(data, dataKey);
 
-	if (resolvedData === false) {
-		// Explicitly remove the node
+		if (resolvedData === false) {
+			// Explicitly remove the node
 
-		node.attr({'removethis':'ohyes'});
-	} else if (resolvedData instanceof Array) {
-		// Create a new element for each existing part of this array
+			node.attr({'removethis':'ohyes'});
+		} else if (resolvedData instanceof Array) {
+			// Create a new element for each existing part of this array
 
-		renderArray(node, data);
-	} else if (resolvedData != undefined) {
-		// Simply append the node with some text
+			renderArray(node, data);
+		} else if (resolvedData != undefined) {
+			// Simply append the node with some text
 
-		node.text(node.text() + resolvedData.toString());
+			node.text(node.text() + resolvedData.toString());
+		}
+	} else {
+		var error = new Error('setNodeVal() called, but no data-value found');
+		console.error(error.stack);
 	}
 }
 
 function setAttrVal(node, data) {
-	var dataKeys;
+	var dataKeys = [];
 
-	if (node.attr('data-attribute'))
+	if (node.attr('data-attribute')) {
 		dataKeys = node.attr('data-attribute').value().split(' ');
-	else if (node.attr('data-localattribute'))
+	} else if (node.attr('data-localattribute')) {
 		dataKeys = node.attr('data-localattribute').value().split(' ');
+	} else {
+		var error = new Error('setAttrVal() called, but no data-attribute or data-localattribute found');
+		console.error(error.stack);
+	}
 
 	for (var i = 0; i < dataKeys.length; i++) {
 		var resolvedData = getValByPath(data, dataKeys[i]);
@@ -194,15 +203,20 @@ function setAttrVal(node, data) {
 }
 
 function setArrNodeVal(node, data) {
-	var localDataKey      = node.attr('data-localvalue').value(),
-	    localResolvedData = getValByPath(data, localDataKey);
+	if (node.attr('data-localvalue')) {
+		var localDataKey = node.attr('data-localvalue').value(),
+		    localResolvedData = getValByPath(data, localDataKey);
 
-	if (localResolvedData === false)
-		node.attr({'removethis':'ohyes'});
-	if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
-		node.text(node.text() + localResolvedData.toString());
-	else if (localResolvedData instanceof Array)
-		renderArray(node, localResolvedData);
+		if (localResolvedData === false)
+			node.attr({'removethis':'ohyes'});
+		else if (typeof localResolvedData == 'string' || typeof localResolvedData == 'number')
+			node.text(node.text() + localResolvedData.toString());
+		else if (localResolvedData instanceof Array)
+			renderArray(node, localResolvedData);
+	} else {
+		var error = new Error('setArrNodeVal() called, but no data-localvalue found');
+		console.error(error.stack);
+	}
 }
 
 function renderArray(node, data) {

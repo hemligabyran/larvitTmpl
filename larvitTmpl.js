@@ -51,11 +51,23 @@ exports.render = function(tmplStr, data, callback) {
 	for (var i = 0; i < nodesToRemove.length; i++)
 		nodesToRemove[i].remove();
 
+	// We also need to make sure <textarea>-tags are not shortened,
+	// since that breaks HTML parsing in many browsers
+	var textareaNodes = doc2.find('//textarea');
+	for (var i = 0; i < textareaNodes.length; i++)
+		if (textareaNodes[i].text() == '')
+			textareaNodes[i].text(' ');
+
+	var htmlStr = exports.doctype + doc2.root().toString();
+
+	// Strip that last space from the textareas so it wont turn up in the end output
+	htmlStr = htmlStr.replace(' </textarea', '</textarea');
+
 	if (exports.logTime)
 		console.timeEnd('Template render');
 
 	if (typeof callback === 'function')
-		callback(null, exports.doctype + doc2.root().toString());
+		callback(null, htmlStr);
 	else
 		console.error('larvitTmpl.js - exports.render() - callback is not passed as a function');
 }

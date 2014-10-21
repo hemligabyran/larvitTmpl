@@ -46,6 +46,7 @@ exports.render = function(tmplStr, data, callback) {
 	// if we do it while working the document. No idea why. / Lilleman 2014-10-11
 	// It seems this is the reason: https://github.com/polotek/libxmljs/pull/163 / Lilleman a few minutes later
 	// If we did not need to do this double parsing, performance should increase
+	// For more information about this issue and possible future salvation: https://github.com/polotek/libxmljs/pull/163
 	var doc2 = libxmljs.parseXmlString(doc.root().toString());
 	var nodesToRemove = doc2.find('//*[@removethis = "ohyes"]');
 	for (var i = 0; i < nodesToRemove.length; i++)

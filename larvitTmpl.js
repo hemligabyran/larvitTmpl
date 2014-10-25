@@ -7,7 +7,10 @@ exports.root = './public/html';
 exports.doctype = '<!DOCTYPE html>';
 
 // Used to log render time to console
-exports.logTime = false;
+exports.debug = false;
+
+// Cache used by partials engine
+exports.partialCache = {'keys': [], 'results': []};
 
 /**
  * Render HTML template + data = HTML
@@ -17,7 +20,7 @@ exports.logTime = false;
  * @param func callback(err, HTML-string)
  */
 exports.render = function(tmplStr, data, callback) {
-	if (exports.logTime)
+	if (exports.debug === true)
 		console.time('Template render');
 
 	var libxmljs        = require('libxmljs'),
@@ -64,7 +67,7 @@ exports.render = function(tmplStr, data, callback) {
 	// Strip that last space from the textareas so it wont turn up in the end output
 	htmlStr = htmlStr.replace(' </textarea', '</textarea');
 
-	if (exports.logTime)
+	if (exports.debug === true)
 		console.timeEnd('Template render');
 
 	if (typeof callback === 'function')
@@ -78,22 +81,27 @@ exports.render = function(tmplStr, data, callback) {
  *
  * @param str or obj - doc The document to find and resolve partitials in.
  *                     If it is an object, it have to be an instance of an xml object
+ * @param bol        - sub defines if this is a subcall. If it is, this setting should be set to true
  * @param func callback(err, tmplStr)
  */
-exports.resolvePartials = function(doc) {
+exports.resolvePartials = function(xmlStr, sub) {
+	if (sub !== true && exports.debug === true)
+		console.time('Template resolving partials');
+
 	var xpath = require('xpath'),
-	    dom   = require('xmldom').DOMParser,
-	    cache = {}; // Caches the resolves
+	    dom   = require('xmldom').DOMParser;
 
-	if (typeof doc === 'string') {
-		if (cache[doc] !== undefined)
-			return cache[doc];
+	var cacheIndex = exports.partialCache.keys.indexOf(xmlStr);
+	if (cacheIndex !== -1) {
+		if (sub !== true && exports.debug === true)
+			console.timeEnd('Template resolving partials');
 
-		doc = new dom().parseFromString(doc);
+		return exports.partialCache.results[cacheIndex];
 	}
 
-	var partials = xpath.select('//partial', doc);
-	var tmplStr  = doc.toString();
+	var doc      = new dom().parseFromString(xmlStr),
+	    partials = xpath.select('//partial', doc),
+	    tmplStr  = doc.toString();
 
 	if ( ! partials.length)
 		return tmplStr;
@@ -118,7 +126,7 @@ exports.resolvePartials = function(doc) {
 			}
 
 			var partialStr = fileData.toString();
-			partialStr = exports.resolvePartials(partialStr);
+			partialStr = exports.resolvePartials(partialStr, true);
 			if ( ! partialStr) {
 				console.error('larvitTmpl.js - resolvePartials() - subResolver returned error:');
 				console.error(partialStr);
@@ -133,7 +141,12 @@ exports.resolvePartials = function(doc) {
 		partial.parentNode.removeChild(partial);
 	}
 
-	cache[doc] = tmplStr;
+	exports.partialCache.keys.push(xmlStr);
+	exports.partialCache.results.push(tmplStr);
+
+	if (sub !== true && exports.debug === true)
+		console.timeEnd('Template resolving partials');
+
 	return tmplStr;
 }
 
